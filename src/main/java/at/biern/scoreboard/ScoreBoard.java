@@ -1,5 +1,10 @@
 package at.biern.scoreboard;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ScoreBoard {
-    // TODO: Implement the ScoreBoard class
+    public List<Game> getSummary() {
+        return new ArrayList<>();
+    }
 }
