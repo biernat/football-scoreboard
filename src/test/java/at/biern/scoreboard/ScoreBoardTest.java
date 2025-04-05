@@ -4,8 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 public class ScoreBoardTest {
 
@@ -14,7 +13,8 @@ public class ScoreBoardTest {
         ScoreBoard board = new ScoreBoard();
         List<Game> summary = board.getSummary();
 
-        assertNotNull(summary);
-        assertTrue(summary.isEmpty());
+        assertThat(summary)
+                .isNotNull()
+                .isEmpty();
     }
 }
