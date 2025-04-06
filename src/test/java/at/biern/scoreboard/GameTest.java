@@ -11,7 +11,7 @@ public class GameTest {
 
     @Test
     public void updatesScore_when_validScoresAreGiven() {
-        Game game = new Game("Mexico", "Canada");
+        Game game = new Game(Team.MEXICO, Team.CANADA);
 
         game.updateScore(2, 3);
 
@@ -21,7 +21,7 @@ public class GameTest {
 
     @Test
     public void throwsException_when_negativeHomeScoreIsGiven() {
-        Game game = new Game("Mexico", "Canada");
+        Game game = new Game(Team.MEXICO, Team.CANADA);
 
         assertThatExceptionOfType(IllegalArgumentException.class)
                 .isThrownBy(() -> game.updateScore(-1, 3))
@@ -30,7 +30,7 @@ public class GameTest {
 
     @Test
     public void throwsException_when_negativeAwayScoreIsGiven() {
-        Game game = new Game("Mexico", "Canada");
+        Game game = new Game(Team.MEXICO, Team.CANADA);
 
         assertThatExceptionOfType(IllegalArgumentException.class)
                 .isThrownBy(() -> game.updateScore(2, -1))
@@ -39,7 +39,7 @@ public class GameTest {
 
     @Test
     public void throwsException_when_negativeScoresAreGiven() {
-        Game game = new Game("Mexico", "Canada");
+        Game game = new Game(Team.MEXICO, Team.CANADA);
 
         assertThatExceptionOfType(IllegalArgumentException.class)
                 .isThrownBy(() -> game.updateScore(-1, -1))
@@ -48,7 +48,7 @@ public class GameTest {
 
     @Test
     public void returnsCorrectStringRepresentation_when_toStringIsCalled() {
-        Game game = new Game("Mexico", "Canada");
+        Game game = new Game(Team.MEXICO, Team.CANADA);
         game.updateScore(2, 3);
 
         String result = game.toString();

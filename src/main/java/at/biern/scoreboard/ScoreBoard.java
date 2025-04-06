@@ -13,31 +13,31 @@ public class ScoreBoard {
         return liveGames;
     }
 
-    public void startGame(String homeTeam, String awayTeam) {
+    public void startGame(Team homeTeam, Team awayTeam) {
         if (isTeamInLiveGame(homeTeam) || isTeamInLiveGame(awayTeam)) {
             throw new IllegalArgumentException(GAME_ALREADY_STARTED);
         }
         liveGames.add(new Game(homeTeam, awayTeam));
     }
 
-    public void finishGame(String homeTeam, String awayTeam) {
+    public void finishGame(Team homeTeam, Team awayTeam) {
         Game game = findGame(homeTeam, awayTeam);
         liveGames.remove(game);
     }
 
-    public void updateScore(String homeTeam, String awayTeam, int homeScore, int awayScore) {
+    public void updateScore(Team homeTeam, Team awayTeam, int homeScore, int awayScore) {
         Game game = findGame(homeTeam, awayTeam);
         game.updateScore(homeScore, awayScore);
     }
 
-    public boolean isTeamInLiveGame(String team) {
+    public boolean isTeamInLiveGame(Team team) {
         return liveGames.stream()
                 .anyMatch(game -> game.isTeamInGame(team));
     }
 
-    private Game findGame(String homeTeam, String awayTeam) {
+    private Game findGame(Team homeTeam, Team awayTeam) {
         return liveGames.stream()
-                .filter(game -> game.getHomeTeam().equals(homeTeam) && game.getAwayTeam().equals(awayTeam))
+                .filter(game -> game.getHomeTeam() == homeTeam && game.getAwayTeam() == awayTeam)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(GAME_NOT_FOUND));
     }

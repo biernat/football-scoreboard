@@ -5,13 +5,13 @@ import java.time.Instant;
 public class Game {
     private static final String SCORES_MUST_BE_NON_NEGATIVE = "Scores must be non-negative.";
 
-    private final String homeTeam;
-    private final String awayTeam;
+    private final Team homeTeam;
+    private final Team awayTeam;
     private int homeScore;
     private int awayScore;
     private final Instant createdAt;
 
-    public Game(String homeTeam, String awayTeam) {
+    public Game(Team homeTeam, Team awayTeam) {
         this.homeTeam = homeTeam;
         this.awayTeam = awayTeam;
         this.homeScore = 0;
@@ -27,15 +27,15 @@ public class Game {
         this.awayScore = awayScore;
     }
 
-    public boolean isTeamInGame(String team) {
-        return homeTeam.equals(team) || awayTeam.equals(team);
+    public boolean isTeamInGame(Team team) {
+        return homeTeam == team || awayTeam == team;
     }
 
-    public String getHomeTeam() {
+    public Team getHomeTeam() {
         return homeTeam;
     }
 
-    public String getAwayTeam() {
+    public Team getAwayTeam() {
         return awayTeam;
     }
 
