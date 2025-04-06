@@ -1,7 +1,9 @@
 package at.biern.scoreboard;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ScoreBoard {
     private static final String GAME_NOT_FOUND = "Game not found.";
@@ -9,8 +11,15 @@ public class ScoreBoard {
 
     private final List<Game> liveGames = new ArrayList<>();
 
-    public List<Game> getSummary() {
-        return liveGames;
+    public List<Game> getSummaryByTotalScore() {
+        Comparator<Game> byTotalScoreAndCreationTime = Comparator
+                .comparingInt((Game game) -> game.getHomeScore() + game.getAwayScore())
+                .reversed()
+                .thenComparing(Game::getCreatedAt, Comparator.reverseOrder());
+
+        return liveGames.stream()
+                .sorted(byTotalScoreAndCreationTime)
+                .collect(Collectors.toList());
     }
 
     public void startGame(Team homeTeam, Team awayTeam) {

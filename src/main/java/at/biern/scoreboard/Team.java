@@ -16,6 +16,7 @@ public enum Team {
     GERMANY("Germany"),
     GHANA("Ghana"),
     IRAN("Iran"),
+    ITALY("Italy"),
     JAPAN("Japan"),
     MEXICO("Mexico"),
     MOROCCO("Morocco"),
