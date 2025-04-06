@@ -1,4 +1,4 @@
-package at.biern.scoreboard;
+package at.biern.scoreboard.domain;
 
 public enum Team {
     ARGENTINA("Argentina"),
