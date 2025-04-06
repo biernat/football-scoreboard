@@ -3,6 +3,8 @@ package at.biern.scoreboard;
 import java.time.Instant;
 
 public class Game {
+    private static final String SCORES_MUST_BE_NON_NEGATIVE = "Scores must be non-negative.";
+
     private final String homeTeam;
     private final String awayTeam;
     private int homeScore;
@@ -15,6 +17,14 @@ public class Game {
         this.homeScore = 0;
         this.awayScore = 0;
         this.createdAt = Instant.now();
+    }
+
+    public void updateScore(int homeScore, int awayScore) {
+        if (homeScore < 0 || awayScore < 0) {
+            throw new IllegalArgumentException(SCORES_MUST_BE_NON_NEGATIVE);
+        }
+        this.homeScore = homeScore;
+        this.awayScore = awayScore;
     }
 
     public boolean isTeamInGame(String team) {
@@ -41,5 +51,9 @@ public class Game {
         return createdAt;
     }
 
+    @Override
+    public String toString() {
+        return String.format("%s %d - %s %d", homeTeam, homeScore, awayTeam, awayScore);
+    }
 
 }

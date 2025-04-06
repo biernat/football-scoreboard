@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ScoreBoard {
-    public static final String GAME_NOT_FOUND = "Game not found.";
-    public static final String GAME_ALREADY_STARTED = "One of the teams is already in a live game.";
+    private static final String GAME_NOT_FOUND = "Game not found.";
+    private static final String GAME_ALREADY_STARTED = "One of the teams is already in a live game.";
 
     private final List<Game> liveGames = new ArrayList<>();
 
@@ -22,10 +22,12 @@ public class ScoreBoard {
 
     public void finishGame(String homeTeam, String awayTeam) {
         Game game = findGame(homeTeam, awayTeam);
-        if (game == null) {
-            throw new IllegalArgumentException(GAME_NOT_FOUND);
-        }
         liveGames.remove(game);
+    }
+
+    public void updateScore(String homeTeam, String awayTeam, int homeScore, int awayScore) {
+        Game game = findGame(homeTeam, awayTeam);
+        game.updateScore(homeScore, awayScore);
     }
 
     public boolean isTeamInLiveGame(String team) {
@@ -37,6 +39,6 @@ public class ScoreBoard {
         return liveGames.stream()
                 .filter(game -> game.getHomeTeam().equals(homeTeam) && game.getAwayTeam().equals(awayTeam))
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new IllegalArgumentException(GAME_NOT_FOUND));
     }
 }
