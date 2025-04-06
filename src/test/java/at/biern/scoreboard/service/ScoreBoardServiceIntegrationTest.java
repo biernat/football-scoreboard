@@ -1,5 +1,11 @@
-package at.biern.scoreboard;
+package at.biern.scoreboard.service;
 
+import at.biern.scoreboard.domain.Game;
+import at.biern.scoreboard.domain.Team;
+import at.biern.scoreboard.exception.GameNotFoundException;
+import at.biern.scoreboard.exception.TeamAlreadyPlayingException;
+import at.biern.scoreboard.repository.InMemoryGameRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -8,13 +14,17 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ScoreBoardTest {
+public class ScoreBoardServiceIntegrationTest {
 
-    private static final String GAME_NOT_FOUND = "Game not found.";
+    private ScoreBoardService board;
+
+    @BeforeEach
+    void setUp() {
+        board = new ScoreBoardService(new InMemoryGameRepository());
+    }
 
     @Test
     public void returnsEmptySummary_when_scoreboardIsEmpty() {
-        ScoreBoard board = new ScoreBoard();
         List<Game> summary = board.getSummaryByTotalScore();
 
         assertThat(summary)
@@ -24,7 +34,6 @@ public class ScoreBoardTest {
 
     @Test
     public void returnsGameInSummary_when_gameIsStarted() {
-        ScoreBoard board = new ScoreBoard();
         board.startGame(Team.MEXICO, Team.CANADA);
         List<Game> summary = board.getSummaryByTotalScore();
 
@@ -40,7 +49,6 @@ public class ScoreBoardTest {
 
     @Test
     public void returnsSummaryWithRemainingGames_when_oneGameIsFinished() {
-        ScoreBoard board = new ScoreBoard();
         board.startGame(Team.MEXICO, Team.CANADA);
         board.startGame(Team.GERMANY, Team.FRANCE);
 
@@ -62,8 +70,7 @@ public class ScoreBoardTest {
     }
 
     @Test
-    public void returnsSummaryOrderedByTotalScoreAndRecency_whenMultipleGamesExist() {
-        ScoreBoard board = new ScoreBoard();
+    public void returnsSummaryOrderedByTotalScoreAndRecency_when_multipleGamesExist() {
         board.startGame(Team.MEXICO, Team.CANADA);
         board.updateScore(Team.MEXICO, Team.CANADA, 0, 5);
         board.startGame(Team.SPAIN, Team.BRAZIL);
@@ -92,40 +99,37 @@ public class ScoreBoardTest {
 
     @Test
     public void throwsException_when_homeTeamIsAlreadyInLiveGame_onStartingGame() {
-        ScoreBoard board = new ScoreBoard();
         board.startGame(Team.MEXICO, Team.CANADA);
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+        TeamAlreadyPlayingException thrown = assertThrows(TeamAlreadyPlayingException.class,
                 () -> board.startGame(Team.MEXICO, Team.GERMANY));
 
-        assertThat(thrown.getMessage()).isEqualTo("One of the teams is already in a live game.");
+        assertThat(thrown.getMessage()).isEqualTo("Cannot start game (Mexico vs Germany): at least one team is already in a live game.");
     }
 
     @Test
     public void throwsException_when_awayTeamIsAlreadyInLiveGame_onStartingGame() {
-        ScoreBoard board = new ScoreBoard();
         board.startGame(Team.MEXICO, Team.CANADA);
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+        TeamAlreadyPlayingException thrown = assertThrows(TeamAlreadyPlayingException.class,
                 () -> board.startGame(Team.GERMANY, Team.CANADA));
 
-        assertThat(thrown.getMessage()).isEqualTo("One of the teams is already in a live game.");
+        assertThat(thrown.getMessage()).isEqualTo("Cannot start game (Germany vs Canada): at least one team is already in a live game.");
     }
 
     @Test
     public void throwsException_when_gameNotFound_onFinishingGame() {
-        ScoreBoard board = new ScoreBoard();
         board.startGame(Team.MEXICO, Team.CANADA);
 
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+        GameNotFoundException thrown = assertThrows(GameNotFoundException.class,
                 () -> board.finishGame(Team.GERMANY, Team.SPAIN));
 
-        assertThat(thrown.getMessage()).isEqualTo(GAME_NOT_FOUND);
+
+        assertThat(thrown.getMessage()).isEqualTo("Game not found for teams: Germany vs Spain.");
     }
 
     @Test
     public void updatesScore_when_gameExists() {
-        ScoreBoard board = new ScoreBoard();
         board.startGame(Team.MEXICO, Team.CANADA);
 
         board.updateScore(Team.MEXICO, Team.CANADA, 2, 3);
@@ -137,11 +141,10 @@ public class ScoreBoardTest {
 
     @Test
     public void throwsException_when_gameNotFound_onUpdatingScore() {
-        ScoreBoard board = new ScoreBoard();
         board.startGame(Team.MEXICO, Team.CANADA);
 
         assertThatThrownBy(() -> board.updateScore(Team.GERMANY, Team.FRANCE, 2, 3))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining(GAME_NOT_FOUND);
+                .isInstanceOf(GameNotFoundException.class)
+                .hasMessageContaining("Game not found for teams: Germany vs France.");
     }
 }
