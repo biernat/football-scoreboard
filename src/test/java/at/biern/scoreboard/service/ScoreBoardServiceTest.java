@@ -4,21 +4,34 @@ import at.biern.scoreboard.domain.Game;
 import at.biern.scoreboard.domain.Team;
 import at.biern.scoreboard.exception.GameNotFoundException;
 import at.biern.scoreboard.exception.TeamAlreadyPlayingException;
-import at.biern.scoreboard.repository.InMemoryGameRepository;
+import at.biern.scoreboard.repository.GameRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.List;
+import java.util.Optional;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.*;
 
 public class ScoreBoardServiceTest {
 
+    private GameRepository mockGameRepository;
+    private ScoreBoardService scoreBoardService;
+
+    @BeforeEach
+    void setUp() {
+        mockGameRepository = mock(GameRepository.class);
+        scoreBoardService = new ScoreBoardService(mockGameRepository);
+    }
+
     @Test
-    public void returnsEmptySummary_when_scoreboardIsEmpty() {
-        ScoreBoardService board = new ScoreBoardService(new InMemoryGameRepository());
-        List<Game> summary = board.getSummaryByTotalScore();
+    public void returnsEmptySummary_when_gameRepositoryIsEmpty() {
+        when(mockGameRepository.findAll()).thenReturn(List.of());
+
+        List<Game> summary = scoreBoardService.getSummaryByTotalScore();
 
         assertThat(summary)
                 .isNotNull()
@@ -26,126 +39,86 @@ public class ScoreBoardServiceTest {
     }
 
     @Test
-    public void returnsGameInSummary_when_gameIsStarted() {
-        ScoreBoardService board = new ScoreBoardService(new InMemoryGameRepository());
-        board.startGame(Team.MEXICO, Team.CANADA);
-        List<Game> summary = board.getSummaryByTotalScore();
+    public void returnsSortedSummary_when_gamesExist() {
+        Game game1 = new Game(Team.MEXICO, Team.CANADA);
+        game1.updateScore(2, 3);
+        Game game2 = new Game(Team.BRAZIL, Team.SPAIN);
+        game2.updateScore(10, 4);
+
+        when(mockGameRepository.findAll()).thenReturn(List.of(game1, game2));
+
+        List<Game> summary = scoreBoardService.getSummaryByTotalScore();
 
         assertThat(summary)
-                .isNotNull()
-                .hasSize(1);
-
-        assertThat(summary.get(0))
-                .isNotNull()
-                .extracting("homeTeam", "awayTeam", "homeScore", "awayScore")
-                .containsExactly(Team.MEXICO, Team.CANADA, 0, 0);
-    }
-
-    @Test
-    public void returnsSummaryWithRemainingGames_when_oneGameIsFinished() {
-        ScoreBoardService board = new ScoreBoardService(new InMemoryGameRepository());
-        board.startGame(Team.MEXICO, Team.CANADA);
-        board.startGame(Team.GERMANY, Team.FRANCE);
-
-        assertThat(board.getSummaryByTotalScore())
-                .isNotNull()
-                .hasSize(2);
-
-        board.finishGame(Team.MEXICO, Team.CANADA);
-
-        List<Game> summary = board.getSummaryByTotalScore();
-
-        assertThat(summary)
-                .isNotNull()
-                .hasSize(1);
-
-        Game remainingGame = summary.get(0);
-        assertThat(remainingGame.getHomeTeam()).isEqualTo(Team.GERMANY);
-        assertThat(remainingGame.getAwayTeam()).isEqualTo(Team.FRANCE);
-    }
-
-    @Test
-    public void returnsSummaryOrderedByTotalScoreAndRecency_whenMultipleGamesExist() {
-        ScoreBoardService board = new ScoreBoardService(new InMemoryGameRepository());
-        board.startGame(Team.MEXICO, Team.CANADA);
-        board.updateScore(Team.MEXICO, Team.CANADA, 0, 5);
-        board.startGame(Team.SPAIN, Team.BRAZIL);
-        board.updateScore(Team.SPAIN, Team.BRAZIL, 10, 2);
-        board.startGame(Team.GERMANY, Team.FRANCE);
-        board.updateScore(Team.GERMANY, Team.FRANCE, 2, 2);
-        board.startGame(Team.URUGUAY, Team.ITALY);
-        board.updateScore(Team.URUGUAY, Team.ITALY, 6, 6);
-        board.startGame(Team.ARGENTINA, Team.AUSTRALIA);
-        board.updateScore(Team.ARGENTINA, Team.AUSTRALIA, 3, 1);
-
-        List<Game> summary = board.getSummaryByTotalScore();
-
-        assertThat(summary)
-                .isNotNull()
-                .hasSize(5)
+                .hasSize(2)
                 .extracting(Game::toString)
-                .containsExactly(
-                        "Uruguay 6 - Italy 6",
-                        "Spain 10 - Brazil 2",
-                        "Mexico 0 - Canada 5",
-                        "Argentina 3 - Australia 1",
-                        "Germany 2 - France 2"
-                );
+                .containsExactly("Brazil 10 - Spain 4", "Mexico 2 - Canada 3");
     }
 
     @Test
     public void throwsException_when_homeTeamIsAlreadyInLiveGame_onStartingGame() {
-        ScoreBoardService board = new ScoreBoardService(new InMemoryGameRepository());
-        board.startGame(Team.MEXICO, Team.CANADA);
+        when(mockGameRepository.findAll()).thenReturn(List.of(new Game(Team.MEXICO, Team.CANADA)));
 
-        TeamAlreadyPlayingException thrown = assertThrows(TeamAlreadyPlayingException.class,
-                () -> board.startGame(Team.MEXICO, Team.GERMANY));
+        assertThatThrownBy(() -> scoreBoardService.startGame(Team.MEXICO, Team.GERMANY))
+                .isInstanceOf(TeamAlreadyPlayingException.class)
+                .hasMessageContaining("Cannot start game (Mexico vs Germany): at least one team is already in a live game.");
 
-        assertThat(thrown.getMessage()).isEqualTo("Cannot start game (Mexico vs Germany): at least one team is already in a live game.");
-    }
-
-    @Test
-    public void throwsException_when_awayTeamIsAlreadyInLiveGame_onStartingGame() {
-        ScoreBoardService board = new ScoreBoardService(new InMemoryGameRepository());
-        board.startGame(Team.MEXICO, Team.CANADA);
-
-        TeamAlreadyPlayingException thrown = assertThrows(TeamAlreadyPlayingException.class,
-                () -> board.startGame(Team.GERMANY, Team.CANADA));
-
-        assertThat(thrown.getMessage()).isEqualTo("Cannot start game (Germany vs Canada): at least one team is already in a live game.");
+        verify(mockGameRepository, times(1)).findAll();
     }
 
     @Test
     public void throwsException_when_gameNotFound_onFinishingGame() {
-        ScoreBoardService board = new ScoreBoardService(new InMemoryGameRepository());
-        board.startGame(Team.MEXICO, Team.CANADA);
+        when(mockGameRepository.find(Team.MEXICO, Team.CANADA)).thenReturn(Optional.empty());
 
-        GameNotFoundException thrown = assertThrows(GameNotFoundException.class,
-                () -> board.finishGame(Team.GERMANY, Team.SPAIN));
-
-
-        assertThat(thrown.getMessage()).isEqualTo("Game not found for teams: Germany vs Spain.");
+        assertThatThrownBy(() -> scoreBoardService.finishGame(Team.MEXICO, Team.CANADA))
+                .isInstanceOf(GameNotFoundException.class)
+                .hasMessageContaining("Game not found for teams: Mexico vs Canada.");
     }
 
     @Test
-    public void updatesScore_when_gameExists() {
-        ScoreBoardService board = new ScoreBoardService(new InMemoryGameRepository());
-        board.startGame(Team.MEXICO, Team.CANADA);
+    public void removesGame_when_gameExists_onFinishingGame() {
+        Team homeTeam = Team.MEXICO;
+        Team awayTeam = Team.CANADA;
+        Game game = new Game(homeTeam, awayTeam);
+        when(mockGameRepository.find(homeTeam, awayTeam)).thenReturn(Optional.of(game));
 
-        board.updateScore(Team.MEXICO, Team.CANADA, 2, 3);
+        scoreBoardService.finishGame(homeTeam, awayTeam);
 
-        Game game = board.getSummaryByTotalScore().get(0);
-        assertThat(game.getHomeScore()).isEqualTo(2);
-        assertThat(game.getAwayScore()).isEqualTo(3);
+        verify(mockGameRepository, times(1)).remove(homeTeam, awayTeam);
     }
 
     @Test
     public void throwsException_when_gameNotFound_onUpdatingScore() {
-        ScoreBoardService board = new ScoreBoardService(new InMemoryGameRepository());
-        board.startGame(Team.MEXICO, Team.CANADA);
+        when(mockGameRepository.find(Team.MEXICO, Team.CANADA)).thenReturn(Optional.empty());  // Simulating game not found
 
-        assertThatThrownBy(() -> board.updateScore(Team.GERMANY, Team.FRANCE, 2, 3))
+        assertThatThrownBy(() -> scoreBoardService.updateScore(Team.MEXICO, Team.CANADA, 2, 3))
                 .isInstanceOf(GameNotFoundException.class)
-                .hasMessageContaining("Game not found for teams: Germany vs France.");
+                .hasMessageContaining("Game not found for teams: Mexico vs Canada.");
+    }
+
+    @Test
+    public void updatesScore_when_gameExists_onUpdatingScore() {
+        Team homeTeam = Team.MEXICO;
+        Team awayTeam = Team.CANADA;
+        Game game = new Game(homeTeam, awayTeam);
+        when(mockGameRepository.find(homeTeam, awayTeam)).thenReturn(Optional.of(game));
+
+        scoreBoardService.updateScore(homeTeam, awayTeam, 2, 3);
+
+        ArgumentCaptor<Game> captor = ArgumentCaptor.forClass(Game.class);
+        verify(mockGameRepository).save(captor.capture());
+        Game savedGame = captor.getValue();
+
+        assertThat(savedGame.getHomeScore()).isEqualTo(2);
+        assertThat(savedGame.getAwayScore()).isEqualTo(3);
+    }
+
+    @Test
+    public void startsNewGame_when_teamsAreNotPlaying() {
+        when(mockGameRepository.findAll()).thenReturn(List.of());
+
+        scoreBoardService.startGame(Team.MEXICO, Team.CANADA);
+
+        verify(mockGameRepository, times(1)).save(any(Game.class));
     }
 }

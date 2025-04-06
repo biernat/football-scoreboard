@@ -51,6 +51,7 @@ public class ScoreBoardService implements ScoreBoard {
         Game game = repository.find(homeTeam, awayTeam)
                 .orElseThrow(() -> new GameNotFoundException(homeTeam, awayTeam));
         game.updateScore(homeScore, awayScore);
+        repository.save(game);
     }
 
     private boolean isTeamInGameAlready(Team team) {
